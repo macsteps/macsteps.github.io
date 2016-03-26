@@ -53,7 +53,7 @@ git push
 git push heroku master
 ```
 
-Verify with ```heroku logs``` and you should see somethig like:
+Verify with ```heroku logs``` and you should see something like:
 
 ```
 2016-03-26T22:28:49.849615+00:00 app[web.1]: [3] Puma starting in cluster mode...
