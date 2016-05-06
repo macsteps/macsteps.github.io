@@ -4,11 +4,9 @@ title:  "Local docker compose configuration"
 date:   2016-05-05 3:30:21 -0700
 categories: docker docker-compose blog rails
 ---
-# A Local Docker Compose Configuration
+I've been exposed to Docker in the past and decided to get my Rails 4 app running in Docker with Postgres on the backend and nginx as a reverse proxy. I probably spent too much time trying to get the image size smaller than 876 MB (My app takes only 37 MB of that). So I'll take some time to document how I got the application (Postgres, Rails, Nginx) working with Docker with the files and images I used.
 
-I realized that I hadn't been documenting my work here as I planned. I got sidetracked with Docker, since I had some exposure to it before, but hadn't taken the time to really learn it. Heroku makes the deployment so easy that I decided to add some challenge. I got really sidetracked when I tried to see if I could get the image size smaller than 876 MB (My app takes only 37 MB of that). So I'll take some time to document how I got the application (Postgres, Rails, Nginx) working with Docker.
-
-I started with a Dockerfile at the Rails root. You'll noticed my Dockerfiles don't have a CMD or ENTRYPOINT command. I'm currently using docker-compose to manage the relationship between the containers (Postgres, Rails, Nginx).
+I start with a Dockerfile at the Rails root. You'll noticed my Dockerfiles don't have a CMD or ENTRYPOINT command. I'm currently using docker-compose to manage the relationship between the containers (Postgres, Rails, Nginx) and it handles the command with parameters as well.
 
 ```
 FROM centurylink/alpine-rails
@@ -26,7 +24,7 @@ RUN bundle install
 COPY . $APP_HOME
 ```
 
-Using alpine-rails, the image is 867 MB. Using ruby:2.2, the image was 893 MB. Not a huge difference, except for larger teams, where having almost 1 GB files flying back and forth stops up network connections. I also tried putting rvm on debian:jessie (to avoid using Ruby 2.1, which probably wouldn't have matter in my case, but I persisted), which was still much larger than both ruby and alpine-rails.
+Using alpine-rails, the image is 867 MB. Using ruby:2.2, the image was 893 MB. Not a huge difference, except perhaps for larger teams, where having almost 1 GB files flying back and forth exhausts network resources. I also tried putting rvm on debian:jessie (to avoid using Ruby 2.1, which probably wouldn't have matter in my case, but I persisted), which was still much larger than both ruby and alpine-rails.
 
 I then created a ```nginx``` directory at Rails root. In this directory I put an nginx.conf file:
 
@@ -63,9 +61,9 @@ http {
 }
 ```
 
-The daemon mode can also be shutoff in the ```docker-compose.yml``` file below as ```nginx -g "daemon off"```. If you want the nginx.conf file to be more portable (e.g. run it outside of Docker & in daemon mode), you might use this method instead. I didn't setup an access log at this point, just the error.log, which will actually be a symbolic link to ```STDERR```.
+Shutting off daemon mode is important, because Docker is looking to run programs in the foreground and most Linux services are designed to run in the background (daemon mode). The daemon mode can also be shutoff in the ```docker-compose.yml``` file instead. For example, if you want the nginx.conf file to be more portable (e.g. run it outside of Docker & in daemon mode), you might use this method instead. I didn't setup an access log at this point, just the error.log, which will actually be a symbolic link to ```STDERR``` (default of nginx image).
 
-Next I need a ```Dockerfile```, also in ./nginx (not to confuse with the app's Dockerfile at Rails root) for the Nginx build:
+Next I need a ```Dockerfile``` for the nginx image, also in ./nginx (not to confuse with the app's Dockerfile at Rails root):
 
 ```
 FROM nginx
